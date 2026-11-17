@@ -1,0 +1,38 @@
+# RUN-4138 live check (runners.io test org): a job that is running on gra1 when gra1's
+# cache-interception CA is renewed must still upload its artifact and save its cache.
+# Dispatch-only. ghwarp-2vcpu-ovh needs the ovh-rise-s SKU, which only gra1 carries.
+name: run-4138 rotation canary
+on:
+  workflow_dispatch:
+    inputs:
+      sleep_seconds:
+        description: seconds to sleep between the cache restore and the upload
+        default: "600"
+jobs:
+  across-rotation:
+    runs-on: ghwarp-2vcpu-ovh
+    timeout-minutes: 30
+    steps:
+      - name: boot marker
+        run: date -u +%FT%TZ; uname -n
+      - name: restore a cache (before the rotation)
+        uses: actions/cache/restore@v4
+        with:
+          path: cachedir
+          key: run4138-${{ github.run_id }}
+          restore-keys: run4138-
+      - name: sleep across the rotation
+        run: sleep "${{ inputs.sleep_seconds }}"
+      - name: make the artifact and the cache content
+        run: mkdir -p out cachedir && date -u +%FT%TZ | tee out/after.txt cachedir/stamp.txt
+      - name: upload an artifact (after the rotation)
+        uses: actions/upload-artifact@v4
+        with:
+          name: after-rotation-${{ github.run_id }}
+          path: out/after.txt
+          retention-days: 1
+      - name: save a cache (after the rotation)
+        uses: actions/cache/save@v4
+        with:
+          path: cachedir
+          key: run4138-${{ github.run_id }}
