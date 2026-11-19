@@ -1,0 +1,8 @@
+name: fork pr (RUN-4308)
+on: pull_request
+jobs:
+  fork:
+    runs-on: runnersio-2vcpu-ubuntu-2404
+    timeout-minutes: 5
+    steps:
+      - run: echo fork ok
